@@ -22,6 +22,7 @@ fastapi
 uvicorn[standard]
 cryptography
 python-multipart
+python-dotenv
 comtypes; sys_platform == "win32"
 pycaw; sys_platform == "win32"
 win10toast; sys_platform == "win32"
