@@ -14,14 +14,15 @@ class JarvisAgent:
         m=re.match(r"(?:jarvis[, ]*)?(?:at|for)\s+(.+?)\s+(?:open|launch|start)\s+(.+)$",t,re.I)
         if m:
             from .scheduler import parse_time_phrase
-            dt=parse_time_phrase("at "+m.group(1));
+            dt=parse_time_phrase("at "+m.group(1))
             if dt: return {"state":"completed","tool":"schedule.add","data":add_task(dt.isoformat(),"app.open",{"target":m.group(2).strip()}),"message":f"Scheduled {m.group(2).strip()} for {dt.strftime('%I:%M %p')}."}
-        m=re.match(r"(?:jarvis[, ]*)?(?:in\s+\d+\s+(?:minutes?|hours?)\s+)?(?:open|launch|start)\s+(.+?)\s+in\s+(.+)$",t,re.I)
         return None
     def handle(self,text:str,confirmed:bool=False):
         t=text.strip(); low=t.lower()
         if not t:return {"state":"failed","message":"Empty request","tool":"orchestrator"}
         try:
+            scheduled=self._schedule_command(t)
+            if scheduled:return scheduled
             if re.search(r"\b(cpu|ram|memory|disk|gpu|battery|system status|computer status|most cpu)\b",low):
                 d=Monitor().snapshot(); return {"state":"completed","tool":"system.status","data":d,"message":self._system_message(d)}
             if re.search(r"\b(lock|lock my computer|lock the computer)\b",low): return execute("system.lock",{})
@@ -35,7 +36,7 @@ class JarvisAgent:
             m=re.match(r"(?:jarvis[, ]*)?type\s+(.+)$",t,re.I)
             if m:return execute("keyboard.type",{"text":m.group(1)},confirmed=confirmed)
             if re.search(r"\b(list|show) (my )?(scheduled tasks|schedules|timers)\b",low): return {"state":"completed","tool":"schedule.list","data":load("scheduled_tasks.json",[]),"message":"Here are the scheduled tasks."}
-            if "open my downloads" in low: return execute("folder.downloads",{})
+            if "open my downloads" in low:return execute("folder.downloads",{})
             m=re.match(r"(?:jarvis[, ]*)?(?:open|launch|start) (.+)$",t,re.I)
             if m:return execute("app.open",{"target":m.group(1).strip()})
             m=re.match(r"(?:jarvis[, ]*)?(?:search|google) (?:the web )?(?:for )?(.+)$",t,re.I)
