@@ -1,5 +1,5 @@
 from __future__ import annotations
-import os, platform, subprocess, webbrowser
+import os, platform, subprocess, time, webbrowser
 from pathlib import Path
 from urllib.parse import quote_plus
 from .storage import log
@@ -8,14 +8,28 @@ from .scheduler import add_task as schedule_add,list_tasks as schedule_list,canc
 
 CONFIRM_REQUIRED={"file.delete","system.command","settings.change","message.send","purchase","system.shutdown","system.sleep","file.move","keyboard.type","mouse.click"}
 def _win_flags(): return {"creationflags":getattr(subprocess,"CREATE_NO_WINDOW",0)} if platform.system()=="Windows" else {}
+
+def _windows_search_launch(target:str):
+    """Launch a desktop app through the normal Windows Start/Search UI."""
+    import pyautogui
+    name=target.strip()
+    if not name: raise ValueError("Application name is empty")
+    pyautogui.press("win")
+    time.sleep(0.25)
+    pyautogui.write(name, interval=0.02)
+    time.sleep(0.6)
+    pyautogui.press("enter")
+    return f"Opened {name} through Windows Search."
+
 def open_target(target:str):
     target=target.strip()
     if not target: raise ValueError("Target is empty")
-    if target.lower() in {"chrome","google chrome"}:
+    low=target.lower()
+    if low in {"chrome","google chrome"}:
         if platform.system()=="Windows": subprocess.Popen(["cmd","/c","start","","chrome"],**_win_flags())
         else: webbrowser.open("https://google.com")
         return "Chrome launch requested."
-    if target.lower()=="spotify":
+    if low=="spotify":
         if platform.system()=="Windows": subprocess.Popen(["cmd","/c","start","","spotify:"],**_win_flags())
         else: webbrowser.open("https://open.spotify.com")
         return "Spotify launch requested."
@@ -25,9 +39,11 @@ def open_target(target:str):
         elif platform.system()=="Darwin": subprocess.Popen(["open",str(p)])
         else: subprocess.Popen(["xdg-open",str(p)])
         return f"Opened {p}"
-    if platform.system()=="Windows": subprocess.Popen(["cmd","/c","start","",target],**_win_flags())
-    else: webbrowser.open(target if "://" in target else "https://"+target)
+    if platform.system()=="Windows":
+        return _windows_search_launch(target)
+    webbrowser.open(target if "://" in target else "https://"+target)
     return f"Launch requested: {target}"
+
 def open_downloads(): return open_target(str(Path.home()/"Downloads"))
 def open_url(url:str):
     if not url.startswith(("http://","https://")): url="https://"+url
