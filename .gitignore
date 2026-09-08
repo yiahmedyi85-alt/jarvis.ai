@@ -1,0 +1,15 @@
+# Secrets and local state
+config/api_keys.json
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.p12
+*.pfx
+jarvis-data/
+__pycache__/
+*.pyc
+.venv/
+venv/
+node_modules/
